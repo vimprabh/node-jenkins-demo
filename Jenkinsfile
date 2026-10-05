@@ -1,22 +1,17 @@
 pipeline {
-
     agent any
 
     environment {
-        PORT = '3000'
+        PATH = "/opt/homebrew/bin:${env.PATH}"
     }
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Check Node') {
             steps {
                 sh '''
+                    echo "PATH = $PATH"
+                    which node
                     node --version
                     npm --version
                 '''
@@ -35,46 +30,16 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
-            steps {
-                sh '''
-                    echo "Stopping old application if running"
-
-                    if [ -f app.pid ]; then
-                        kill $(cat app.pid) || true
-                        rm -f app.pid
-                    fi
-
-                    echo "Starting application"
-
-                    nohup node app.js > app.log 2>&1 &
-                    echo $! > app.pid
-
-                    sleep 3
-                '''
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                sh '''
-                    curl --fail http://localhost:${PORT}/health
-                '''
-            }
-        }
-
+        // remaining stages...
     }
 
     post {
-
         success {
-            echo 'Node.js application deployed successfully!'
+            echo 'Pipeline completed successfully!'
         }
 
         failure {
             echo 'Pipeline failed!'
         }
-
     }
-
 }
