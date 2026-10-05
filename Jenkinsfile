@@ -16,7 +16,6 @@ pipeline {
             }
         }
 
-
         stage('Check Tools') {
             steps {
                 sh '''
@@ -32,13 +31,11 @@ pipeline {
             }
         }
 
-
         stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
             }
         }
-
 
         stage('Unit Test') {
             steps {
@@ -46,23 +43,19 @@ pipeline {
             }
         }
 
-
         stage('Docker Build') {
             steps {
                 sh '''
                     docker build \
-                    -t ${DOCKER_IMAGE}:${BUILD_NUMBER} \
-                    -t ${DOCKER_IMAGE}:latest \
-                    .
+                        -t ${DOCKER_IMAGE}:${BUILD_NUMBER} \
+                        -t ${DOCKER_IMAGE}:latest \
+                        .
                 '''
             }
         }
 
-
         stage('Push to Docker Hub') {
-
             steps {
-
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub-credentials',
@@ -74,21 +67,17 @@ pipeline {
                     sh '''
                         echo "$DOCKER_PASSWORD" | \
                         docker login \
-                        -u "$DOCKER_USERNAME" \
-                        --password-stdin
+                            -u "$DOCKER_USERNAME" \
+                            --password-stdin
 
                         docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
-
                         docker push ${DOCKER_IMAGE}:latest
 
                         docker logout
                     '''
-
                 }
-
             }
         }
-
 
         stage('Remove Local Image') {
             steps {
@@ -99,7 +88,6 @@ pipeline {
             }
         }
 
-
         stage('Pull from Docker Hub') {
             steps {
                 sh '''
@@ -108,10 +96,8 @@ pipeline {
             }
         }
 
-
         stage('Docker Run') {
             steps {
-
                 sh '''
                     echo "Stopping existing container"
 
@@ -120,57 +106,42 @@ pipeline {
                     echo "Starting new container"
 
                     docker run -d \
-                    --name ${CONTAINER_NAME} \
-                    -p ${APP_PORT}:3002 \
-                    ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                        --name ${CONTAINER_NAME} \
+                        -p ${APP_PORT}:3000 \
+                        ${DOCKER_IMAGE}:${BUILD_NUMBER}
                 '''
-
             }
         }
 
-
         stage('Health Check') {
-
             steps {
-
                 sh '''
                     sleep 5
 
                     echo "Checking application health"
 
                     curl --fail \
-                    http://localhost:${APP_PORT}/health
+                        http://localhost:${APP_PORT}/health
                 '''
-
             }
         }
-
     }
-
 
     post {
 
         success {
-
             echo '''
             ===================================
             Deployment Successful
             ===================================
             '''
-
         }
-
 
         failure {
-
             sh '''
                 echo "Pipeline failed"
-
                 docker logs ${CONTAINER_NAME} || true
             '''
-
         }
-
     }
-
 }
